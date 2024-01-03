@@ -78,3 +78,18 @@ for span in growth_spans:
 #%%
 df = pd.concat([df, df_growth, df_comp_growth, df_acc_growth],axis=1)
 #%%
+new_year = 1990
+df_new = df.loc[df.index > new_year]
+df_new
+#%% [Markdown]
+# # EDA
+#%%
+df.describe().round(2)
+#%%
+df_new.describe().round(2)
+#%%
+# Histograms
+from plot import plot_histograms
+plot_histograms(df, path=results_all_dir)
+plot_histograms(df, path=results_new_dir)
+#%%
