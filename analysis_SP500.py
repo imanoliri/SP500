@@ -6,6 +6,7 @@ data_dir = 'data'
 results_dir = 'results'
 results_all_dir = f'{results_dir}/all'
 results_new_dir = f'{results_dir}/new'
+results_strategy_validation_dir = f'{results_dir}/strategy_validation'
 sp500_data_file = 'sp500.csv'
 inflation_data_file = 'inflation.csv'
 sp500_data_filepath = f'{data_dir}/{sp500_data_file}'
@@ -92,4 +93,21 @@ df_new.describe().round(2)
 from plot import plot_histograms
 plot_histograms(df, path=results_all_dir)
 plot_histograms(df, path=results_new_dir)
+#%% [Markdown]
+# #  Validate strategies
+#%%
+# Select 3 best tuned from each strategy
+strategies_to_validate = [df_acc_growth]
+#%%
+# Plot selected strategy
+from plot import multiplot
+selected_strategy = 'SP500 Accumulated Growth 40'
+selected_real_strategy = 'SP500 Real Accumulated Growth 40'
+selected_inflation = 'Accumulated Inflation 40'
+sp500_growth_inflation_series = [('SP500', 'line', 'tab:orange', dict(logy=True,figsize=(20,5))), (selected_strategy, 'bar', 'tab:blue', {}), (selected_inflation, 'bar', 'tab:red', {})]
+multiplot(df, sp500_growth_inflation_series, path=results_strategy_validation_dir)
+sp500_real_growth_series = [('Real Price', 'line', 'tab:orange', dict(logy=True,figsize=(20,5))), (selected_real_strategy, 'bar', 'tab:blue', {})]
+multiplot(df, sp500_real_growth_series, path=results_strategy_validation_dir)
+cpi_series = [(cpi_column, 'line', 'tab:blue', dict(figsize=(20,5)))]
+multiplot(df, cpi_series, path=results_strategy_validation_dir)
 #%%
