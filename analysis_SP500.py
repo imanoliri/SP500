@@ -21,8 +21,8 @@ df = pd.read_csv(sp500_data_filepath)
 year = df.Date.apply(lambda x: int(x[:4]))
 is_first_from_year = year.diff(1) != 0
 df = df.loc[is_first_from_year]
-df.loc[:,'Date'] = pd.to_datetime(df.loc[:,'Date']).apply(lambda x: x.year)
-df = df.set_index('Date')
+df.index= pd.Index(pd.to_datetime(df.loc[:,'Date']).apply(lambda x: x.year))
+df = df.drop(columns='Date')
 df
 #%% [Markdown]
 # # Feature Engineering
@@ -77,10 +77,14 @@ sp500_real_column = ('sp500', 'real', 'value', '')
 selected_nominal_strategy = ('sp500', 'nominal', 'accumulated_growth', 40)
 selected_real_strategy = ('sp500', 'real', 'accumulated_growth', 40)
 selected_inflation = ('consumer_price_index', 'nominal', 'accumulated_growth', 40)
+hlines = [(1, 'r', '-')]
+
 sp500_growth_inflation_series = [(sp500_nominal_column, 'line', 'tab:orange', dict(logy=True,figsize=(20,5))), (selected_nominal_strategy, 'bar', 'tab:blue', {}), (selected_inflation, 'bar', 'tab:red', {})]
-multiplot(df_all, sp500_growth_inflation_series, path=results_strategy_validation_dir)
+multiplot(df_all, sp500_growth_inflation_series, hlines=hlines, path=results_strategy_validation_dir)
+
 sp500_real_growth_series = [(sp500_real_column, 'line', 'tab:orange', dict(logy=True,figsize=(20,5))), (selected_real_strategy, 'bar', 'tab:blue', {})]
-multiplot(df_all, sp500_real_growth_series, path=results_strategy_validation_dir)
+multiplot(df_all, sp500_real_growth_series, hlines=hlines, path=results_strategy_validation_dir)
+
 cpi_series = [(cpi_column, 'line', 'tab:blue', dict(figsize=(20,5)))]
 multiplot(df_all, cpi_series, path=results_strategy_validation_dir)
 #%%

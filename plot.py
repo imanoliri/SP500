@@ -115,7 +115,7 @@ def get_outlier_extreme_values(data: np.array,
     return loval, hival, actual_loval, actual_hival
 
 
-def multiplot(df: pd.DataFrame, series_to_plot: List[Tuple[str, str, str, dict]], path: str = None, title: str = None, dropna: bool = True, **kwargs):
+def multiplot(df: pd.DataFrame, series_to_plot: List[Tuple[str, str, str, dict]], hlines: List[Tuple[float, str, str]] = None, vlines: List[Tuple[float, str, str]] = None, path: str = None, title: str = None, dropna: bool = True, **kwargs):
     columns, kinds, colors, plot_kwargs = zip(*series_to_plot)
 
     if title is None:
@@ -142,6 +142,22 @@ def multiplot(df: pd.DataFrame, series_to_plot: List[Tuple[str, str, str, dict]]
         if ax2 is None:
             ax2 = ax1.twinx()
         df_plot.plot(ax=ax2, y=plot_col, kind=plot_kind, color=plot_color, **plot_kwargs, **kwargs)
+
+    if hlines is not None:
+        for hval, hcol, hstyle in hlines:
+            if hcol is None:
+                hcol = 'r'
+            if hstyle is None:
+                hstyle = '-'
+            plt.axhline(y=hval, color=hcol, linestyle=hstyle)
+    
+    if vlines is not None:
+        for vval, vcol, vstyle in vlines:
+            if vcol is None:
+                vcol = 'r'
+            if vstyle is None:
+                vstyle = '-'
+            plt.axvline(x=vval, color=vcol, linestyle=vstyle)
     
     ax1.set_xticklabels(ax1.get_xticklabels(), rotation=90)
     
