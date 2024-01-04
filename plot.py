@@ -30,10 +30,10 @@ def plot_histograms(df: pd.DataFrame,
 
     if titles is None:
         titles = [
-            '_'.join(v for v in c if v != '') if isinstance(c, tuple) else c
+            '_'.join(str(v) for v in c if v != '') if isinstance(c, tuple) else c
             for c in columns
         ]
-        titles = [c.lower() for c in columns]
+        titles = [c.lower() for c in titles]
     for col, title in zip(columns, titles):
         plot_hist(df, col, title, path, bins, with_boxplot, sharex,
                   ignore_outliers, save_plot)
@@ -120,26 +120,30 @@ def multiplot(df: pd.DataFrame, series_to_plot: List[Tuple[str, str, str, dict]]
 
     if title is None:
         titles = [
-            '_'.join(v for v in c if v != '') if isinstance(c, Iterable) and not isinstance(c, str) else str(c)
+            '_'.join(str(v) for v in c if v != '') if isinstance(c, Iterable) and not isinstance(c, str) else str(c)
             for c in columns
         ]
         titles = [c.lower() for c in titles]
-        title = '_'.join(titles)
+        title = '__'.join(titles)
     
 
-    df_plot = df.loc[:,columns]
+    df_plot = df.loc[:,list(columns)]
     if dropna:
         df_plot = df_plot.dropna()
     
     ax1 = None
+    ax2 = None
     for plot_col, plot_kind, plot_color, plot_kwargs in series_to_plot:
         if ax1 is None:
             ax1 = df_plot.plot(y=plot_col, kind=plot_kind, color=plot_color, **plot_kwargs, **kwargs)
+            plot_one = True
             continue
-
-        ax2 = ax1.twinx()
+        
+        if ax2 is None:
+            ax2 = ax1.twinx()
         df_plot.plot(ax=ax2, y=plot_col, kind=plot_kind, color=plot_color, **plot_kwargs, **kwargs)
-        ax1.set_xticklabels(ax1.get_xticklabels(), rotation=90)
+    
+    ax1.set_xticklabels(ax1.get_xticklabels(), rotation=90)
     
     file_str = title.lower().replace(' ', '_')
     os.makedirs(Path(path), exist_ok=True)
