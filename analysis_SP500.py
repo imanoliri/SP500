@@ -33,51 +33,22 @@ cpi_column = 'Consumer Price Index'
 cpi = df.loc[:,cpi_column]
 df.loc[:,inflation_column] = (cpi.diff(1) / cpi * 100).round(2)
 #%%
-# Create SP500 Growth by year span
-growth_spans = list(range(5, 41, 5))
-sp500_growth_column = 'SP500 Growth'
-sp500_column = 'SP500'
-sp500 = df.loc[:,sp500_column]
-df.loc[:,sp500_growth_column] = sp500.rolling(2).apply(lambda x: x.iloc[-1]/x.iloc[0])
-sp500_yearly_growth = df.loc[:,sp500_growth_column]
-df_growth = pd.DataFrame(index=df.index)
-for span in growth_spans:
-    df_growth.loc[:,f'{sp500_growth_column} ({span})'] = (sp500.diff(span) / sp500 * 100).round(2)
+# Create SP500 nominal growths
+from analysis import add_growth_infos
+df_nominal_growths = add_growth_infos(df, 'SP500', real_value=False)
 #%%
-# Create SP500 Compounded Growth by year span
-sp500_comp_growth_column = 'SP500 Compounded Growth'
-sp500_growth_yearly_column = 'SP500 Growth'
-sp500_yearly_growth = df.loc[:,sp500_growth_yearly_column]
-df_comp_growth = pd.DataFrame(index=df.index)
-for span in growth_spans:
-    df_comp_growth.loc[:,f'{sp500_comp_growth_column} ({span})'] = sp500_yearly_growth.rolling(span).apply(lambda x: x.product())
+# Create SP500 real growths
+df_real_growths = add_growth_infos(df, 'Real Price', real_value=True)
+renamer = {'real_price': 'sp500'}
+df_real_growths.columns = pd.MultiIndex.from_tuples([tuple(renamer[v] if v in renamer else v for v in c) for c in df_real_growths.columns])
 #%%
-import numpy as np
-def calculate_accumulated_growth(yearly_growth: pd.Series, span: int) -> pd.Series:
-    return pd.Series((accumulated_growth(yearly_growth,span,p) for p in range(len(yearly_growth))),index=yearly_growth.index)
-
-def accumulated_growth(yearly_growth: pd.Series, span: int, position: int) -> pd.Series:
-    acc = 0
-    compound_yearly_growth = yearly_growth.iloc[position-span:position].expanding().apply(lambda x: x.product())
-    if compound_yearly_growth.dropna().empty:
-        return np.nan
-    for comp_growth in compound_yearly_growth:
-        if not pd.isnull(comp_growth):
-            acc = acc + 1*comp_growth
-    return acc / len(compound_yearly_growth.dropna())
-        
-#%%
-# Create SP500 Accumulated Growth by year span
-sp500_acc_growth_column = 'SP500 Accumulated Growth'
-sp500_growth_yearly_column = 'SP500 Growth'
-sp500_yearly_growth = df.loc[:,sp500_growth_yearly_column]
-df_acc_growth = pd.DataFrame(index=df.index)
-for span in growth_spans:
-    df_acc_growth.loc[:,f'{sp500_acc_growth_column} ({span})'] = calculate_accumulated_growth(sp500_yearly_growth, span)
+# Create Accumulated Inflation by year span
+df_inflation_growths = add_growth_infos(df, 'Consumer Price Index', real_value=False)
 #%%
 # Merge all results
 #%%
-df = pd.concat([df, df_growth, df_comp_growth, df_acc_growth],axis=1)
+df.columns = pd.MultiIndex.from_tuples([(c, '', '', '') for c in df.columns])
+df_all = pd.concat([df, df_nominal_growths, df_real_growths, df_inflation_growths], axis=1)
 #%%
 new_year = 1990
 df_new = df.loc[df.index > new_year]
@@ -91,23 +62,28 @@ df_new.describe().round(2)
 #%%
 # Histograms
 from plot import plot_histograms
-plot_histograms(df, path=results_all_dir)
-plot_histograms(df, path=results_new_dir)
+plot_histograms(df_all, path=results_all_dir)
+plot_histograms(df_all, path=results_new_dir)
 #%% [Markdown]
 # #  Validate strategies
 #%%
 # Select 3 best tuned from each strategy
-strategies_to_validate = [df_acc_growth]
+strategies_to_validate = [df_real_growths, df_nominal_growths]
 #%%
 # Plot selected strategy
 from plot import multiplot
-selected_strategy = 'SP500 Accumulated Growth 40'
-selected_real_strategy = 'SP500 Real Accumulated Growth 40'
-selected_inflation = 'Accumulated Inflation 40'
-sp500_growth_inflation_series = [('SP500', 'line', 'tab:orange', dict(logy=True,figsize=(20,5))), (selected_strategy, 'bar', 'tab:blue', {}), (selected_inflation, 'bar', 'tab:red', {})]
-multiplot(df, sp500_growth_inflation_series, path=results_strategy_validation_dir)
-sp500_real_growth_series = [('Real Price', 'line', 'tab:orange', dict(logy=True,figsize=(20,5))), (selected_real_strategy, 'bar', 'tab:blue', {})]
-multiplot(df, sp500_real_growth_series, path=results_strategy_validation_dir)
+sp500_nominal_column = ('sp500', 'nominal', 'value', '')
+sp500_real_column = ('sp500', 'real', 'value', '')
+selected_nominal_strategy = ('sp500', 'nominal', 'accumulated_growth', 40)
+selected_real_strategy = ('sp500', 'real', 'accumulated_growth', 40)
+selected_inflation = ('consumer_price_index', 'nominal', 'accumulated_growth', 40)
+sp500_growth_inflation_series = [(sp500_nominal_column, 'line', 'tab:orange', dict(logy=True,figsize=(20,5))), (selected_nominal_strategy, 'bar', 'tab:blue', {}), (selected_inflation, 'bar', 'tab:red', {})]
+multiplot(df_all, sp500_growth_inflation_series, path=results_strategy_validation_dir)
+sp500_real_growth_series = [(sp500_real_column, 'line', 'tab:orange', dict(logy=True,figsize=(20,5))), (selected_real_strategy, 'bar', 'tab:blue', {})]
+multiplot(df_all, sp500_real_growth_series, path=results_strategy_validation_dir)
 cpi_series = [(cpi_column, 'line', 'tab:blue', dict(figsize=(20,5)))]
-multiplot(df, cpi_series, path=results_strategy_validation_dir)
+multiplot(df_all, cpi_series, path=results_strategy_validation_dir)
+#%%
+#%%
+#%%
 #%%
