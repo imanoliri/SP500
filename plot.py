@@ -115,9 +115,59 @@ def get_outlier_extreme_values(data: np.array,
     return loval, hival, actual_loval, actual_hival
 
 
-def multiplot(df: pd.DataFrame, series_to_plot: List[Tuple[str, str, str, dict]], hlines: List[Tuple[float, str, str]] = None, vlines: List[Tuple[float, str, str]] = None, path: str = None, title: str = None, dropna: bool = True, **kwargs):
-    columns, kinds, colors, plot_kwargs = zip(*series_to_plot)
+def combined_plot(df1: pd.DataFrame, df2: pd.DataFrame, series_to_plot_1: List[Tuple[str, str, str, dict]], series_to_plot_2: List[Tuple[str, str, str, dict]], path: str = None, save: bool=True, title: str = None, **kwargs):
+    fig, (ax1, ax2) = plt.subplots(2, 1)
 
+    multiplot(df1, series_to_plot_1, **kwargs, ax=ax1, save=False)
+    multiplot(df2, series_to_plot_2, **kwargs, ax=ax2, save=False)
+    
+    ax1.set_xticklabels(ax1.get_xticklabels(), rotation=90)
+    ax2.set_xticklabels(ax2.get_xticklabels(), rotation=90)
+
+
+    cols_1 = list(zip(*series_to_plot_1))[0]
+    cols_2 = list(zip(*series_to_plot_2))[0]
+    columns = [*cols_1,*cols_2]
+    if save:
+        save_plot(path=path, title=title, columns=columns, prefix='combined_plot')
+
+def overlap_plot(df1: pd.DataFrame, df2: pd.DataFrame, series_to_plot_1: List[Tuple[str, str, str, dict]], series_to_plot_2: List[Tuple[str, str, str, dict]], path: str = None, save: bool=True, title: str = None, **kwargs):
+    ax1 = plt.axes()
+    ax2 = plt.twinx(ax1)
+
+    multiplot(df1, series_to_plot_1, **kwargs, ax=ax1, save=False)
+    multiplot(df2, series_to_plot_2, **kwargs, ax=ax2, save=False)
+    
+    ax1.set_xticklabels(ax1.get_xticklabels(), rotation=90)
+    ax2.set_xticklabels(ax2.get_xticklabels(), rotation=90)
+
+
+    cols_1 = list(zip(*series_to_plot_1))[0]
+    cols_2 = list(zip(*series_to_plot_2))[0]
+    columns = [*cols_1,*cols_2]
+    if save:
+        save_plot(path=path, title=title, columns=columns, prefix='overlap_plot')
+
+
+def multiplot(df: pd.DataFrame, series_to_plot: List[Tuple[str, str, str, dict]], dropna: bool = True, ax: plt.Axes=None, path: str = None, save: bool=True, title: str = None, **kwargs):
+    if ax is None:
+        ax = plt.axes()
+    
+    columns = list(zip(*series_to_plot))[0]
+
+    df_plot = df.loc[:,list(columns)]
+    if dropna:
+        df_plot = df_plot.dropna()
+    for plot_col, plot_kind, plot_color, plot_kwargs in series_to_plot:
+        df_plot.plot(ax=ax, y=plot_col, kind=plot_kind, color=plot_color, **plot_kwargs, **kwargs)
+    
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+
+    if save:
+        save_plot(path=path, title=title, columns=columns, prefix='multiplot')
+
+
+def save_plot(path: str, title: str = None, columns: list = None, prefix: str = None):
     if title is None:
         titles = [
             '_'.join(str(v) for v in c if v != '') if isinstance(c, Iterable) and not isinstance(c, str) else str(c)
@@ -126,45 +176,10 @@ def multiplot(df: pd.DataFrame, series_to_plot: List[Tuple[str, str, str, dict]]
         titles = [c.lower() for c in titles]
         title = '__'.join(titles)
     
+    if prefix is not None:
+        title = f'{prefix}__{title}'
 
-    df_plot = df.loc[:,list(columns)]
-    if dropna:
-        df_plot = df_plot.dropna()
-    
-    ax1 = None
-    ax2 = None
-    for plot_col, plot_kind, plot_color, plot_kwargs in series_to_plot:
-        if ax1 is None:
-            ax1 = df_plot.plot(y=plot_col, kind=plot_kind, color=plot_color, **plot_kwargs, **kwargs)
-            plot_one = True
-            continue
-        
-        if ax2 is None:
-            ax2 = ax1.twinx()
-        df_plot.plot(ax=ax2, y=plot_col, kind=plot_kind, color=plot_color, **plot_kwargs, **kwargs)
-
-    if hlines is not None:
-        for hval, hcol, hstyle in hlines:
-            if hcol is None:
-                hcol = 'r'
-            if hstyle is None:
-                hstyle = '-'
-            plt.axhline(y=hval, color=hcol, linestyle=hstyle)
-    
-    if vlines is not None:
-        for vval, vcol, vstyle in vlines:
-            if vcol is None:
-                vcol = 'r'
-            if vstyle is None:
-                vstyle = '-'
-            plt.axvline(x=vval, color=vcol, linestyle=vstyle)
-    
-    ax1.set_xticklabels(ax1.get_xticklabels(), rotation=90)
-    
     file_str = title.lower().replace(' ', '_')
     os.makedirs(Path(path), exist_ok=True)
     plt.savefig(f'{path}/{file_str}.jpg')
     plt.close('all')
-
-
-
