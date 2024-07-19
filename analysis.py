@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+from typing import List
 
 def growth(values: pd.Series, rolling_step: int = 2) -> pd.Series:
     return values.rolling(rolling_step).apply(lambda x: x.iloc[-1]/x.iloc[0])
@@ -25,7 +25,7 @@ def acc_growth_point(yearly_growth: pd.Series, span: int, position: int) -> pd.S
     return acc / len(compound_yearly_growth.dropna())
 
 
-def add_growth_infos(df: pd.DataFrame, value_column: str, *, range_start: int = 5, range_end: int = 41, range_step = 5, real_value: bool = False) -> pd.DataFrame:
+def add_growth_infos(df: pd.DataFrame, value_column: str, other_earning_columns: List[str] = None, *, range_start: int = 5, range_end: int = 41, range_step = 5, real_value: bool = False) -> pd.DataFrame:
     value_str = value_column.lower().replace(' ', '_')
     real_str = 'real' if real_value else 'nominal'
     new_value_column = (value_str, real_str, 'value', '')
@@ -38,9 +38,13 @@ def add_growth_infos(df: pd.DataFrame, value_column: str, *, range_start: int = 
 
     # Values
     values = df.loc[:,value_column]
+    if other_earning_columns is not None:
+        for o_col in other_earning_columns:
+            values = values + df.loc[:, o_col]
 
     # Yearly growths
     growths = growth(values)
+
     df_growth = pd.DataFrame([values.values, growths.values], index = pd.MultiIndex.from_tuples([new_value_column, growth_column]), columns=df.index).T
 
     # Compound growths for the defined spans
