@@ -1,4 +1,4 @@
-Date,SP500,Dividend,Earnings,Consumer Price Index,Long Interest Rate,Real Price,Real Dividend,Real Earnings,PE10
+Date,sp500,Dividend,Earnings,Consumer Price Index,Long Interest Rate,Real Price,Real Dividend,Real Earnings,PE10
 2018-04-01,2642.19,null,null,249.84,2.8,2642.19,null,null,31.19
 2018-03-01,2702.77,50,null,249.55,2.84,2705.82,50.06,null,31.99
 2018-02-01,2705.16,49.64,null,248.99,2.86,2714.34,49.81,null,32.12
