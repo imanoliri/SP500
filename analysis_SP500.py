@@ -23,6 +23,7 @@ is_first_from_year = year.diff(1) != 0
 df = df.loc[is_first_from_year]
 df.index= pd.Index(pd.to_datetime(df.loc[:,'Date']).apply(lambda x: x.year))
 df = df.drop(columns='Date')
+df = df.sort_index()
 df
 #%% [Markdown]
 # # Feature Engineering
