@@ -7,8 +7,8 @@ results_dir = 'results'
 results_all_dir = f'{results_dir}/all'
 results_new_dir = f'{results_dir}/new'
 results_strategy_validation_dir = f'{results_dir}/strategy_validation'
-sp500_growth_data_file = 'history.csv'
-sp500_data_file = 'sp500.csv'
+sp500_growth_data_file = 'sp500_total_return.csv'
+sp500_data_file = 'sp500_breakdown_and_cpi.csv'
 inflation_data_file = 'inflation.csv'
 sp500_data_filepath = f'{data_dir}/{sp500_data_file}'
 sp500_growth_data_filepath = f'{data_dir}/{sp500_growth_data_file}'
@@ -17,8 +17,8 @@ inflation_data_filepath = f'{data_dir}/{inflation_data_file}'
 #%%
 # Load the data (source: https://datahub.io/core/s-and-p-500)
 import pandas as pd
-df = pd.read_csv(sp500_data_filepath)
-df_growth = pd.read_csv(sp500_growth_data_filepath, index_col=0, names=['year', 'growth']).sort_index()
+df_breakdown_cpi = pd.read_csv(sp500_data_filepath)
+df_growth = pd.read_csv(sp500_growth_data_filepath, index_col=0).sort_index()
 #%%
 # Get only last value from each year
 def from_time_column_to_single_year_value(df: pd.DataFrame, time_column: str = 'Date') -> pd.DataFrame:
@@ -32,9 +32,9 @@ def from_time_column_to_single_year_value(df: pd.DataFrame, time_column: str = '
 def from_percentage_to_unitary(df: pd.DataFrame) -> pd.DataFrame:
     return 1+df/100
 
-df = from_time_column_to_single_year_value(df)
+df_breakdown_cpi = from_time_column_to_single_year_value(df_breakdown_cpi)
 df_growth = from_percentage_to_unitary(df_growth)
-df = pd.concat([df, df_growth],axis=1).dropna()
+df = pd.concat([df_breakdown_cpi, df_growth],axis=1).dropna()
 #%% [Markdown]
 # # Feature Engineering
 #%%
