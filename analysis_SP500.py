@@ -45,13 +45,13 @@ cpi = df.loc[:,cpi_column]
 df.loc[:,inflation_column] = (cpi.diff(1) / cpi * 100)
 #%%
 # Create SP500 nominal growths
-from analysis import generate_growth_infos
+from growth import generate_growth_infos
 df_growths = generate_growth_infos(df, growth_column='growth')
 df_growths.columns = pd.MultiIndex.from_tuples([('sp500',*c) for c in df_growths.columns])
 
 #%%
 # Generate inflation growths
-from analysis import generate_value_growth_infos
+from growth import generate_value_growth_infos
 df_inflations = generate_value_growth_infos(df, value_column=cpi_column)
 df_inflations.columns = pd.MultiIndex.from_tuples([('prices',*c) for c in df_inflations.columns])
 
