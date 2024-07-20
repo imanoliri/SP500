@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from typing import List
 
 def growth(values: pd.Series, rolling_step: int = 2) -> pd.Series:
     return values.rolling(rolling_step).apply(lambda x: x.iloc[-1]/x.iloc[0])
