@@ -86,7 +86,7 @@ df_new.describe().round(2).to_csv(f'{results_dir}/sp500_new_describe.csv')
 # Plot selected strategy
 from plot import combined_plot, multiplot, overlap_plot
 selected_index = 'sp500'
-selected_strategy = ('sp500', 'accumulated_growth', 40)
+selected_strategy = ('sp500', 'dca_compound_growth', 40)
 selected_inflation = ('prices', 'growth', 40)
 
 sp500_value_series = ((selected_index, 'line', 'tab:orange', dict(logy=True)),)
