@@ -54,11 +54,21 @@ df_growths.columns = pd.MultiIndex.from_tuples([('sp500',*c) for c in df_growths
 from growth import generate_value_growth_infos
 df_inflations = generate_value_growth_infos(df, value_column=cpi_column)
 df_inflations.columns = pd.MultiIndex.from_tuples([('prices',*c) for c in df_inflations.columns])
+#%%
+# Create retirement (SP500 nominal - 4% rule retirement)
+from growth import generate_growth_infos
+retirement_draws = [4,3,2]
+df_retirement_growths_variants = []
+for rdraw in retirement_draws:
+    df.loc[:,f'growth_minus_{rdraw}_percent'] = df.loc[:,'growth'] - rdraw/100
+    df_retirement_growths = generate_growth_infos(df, growth_column=f'growth_minus_{rdraw}_percent')
+    df_retirement_growths.columns = pd.MultiIndex.from_tuples([(f'sp500_minus_{rdraw}_percent',*c) for c in df_retirement_growths.columns])
+    df_retirement_growths_variants.append(df_retirement_growths)
 
 #%%
 df_to_merge = df.iloc[:,:4]
 df_to_merge.columns = pd.MultiIndex.from_product([df_to_merge.columns,[''],['']])
-df_all = pd.concat([df_to_merge, df_growths, df_inflations],axis=1)
+df_all = pd.concat([df_to_merge, df_growths, *df_retirement_growths_variants, df_inflations], axis=1)
 new_year = 1990
 df_new = df_all.loc[df_all.index > new_year]
 df_new
@@ -87,11 +97,15 @@ df_new.describe().round(2).to_csv(f'{results_dir}/sp500_new_describe.csv')
 from plot import combined_plot, multiplot, overlap_plot
 selected_index = 'sp500'
 selected_strategy = ('sp500', 'dca_compound_growth', 40)
+selected_retirements = [(f'sp500_minus_{rdraw}_percent', 'dca_compound_growth', 40) for rdraw in retirement_draws]
 selected_inflation = ('prices', 'growth', 40)
 
 sp500_value_series = ((selected_index, 'line', 'tab:orange', dict(logy=True)),)
 sp500_growth_vs_inflation_series = ((selected_strategy, 'bar', 'tab:blue', {}), (selected_inflation, 'bar', 'tab:red', {}),)
-combined_plot(df, df_all, sp500_value_series, sp500_growth_vs_inflation_series, path=results_strategy_validation_dir, figsize=(20,10))
+sp500_retirements_vs_inflation_series = [((sr, 'bar', 'tab:green', {}), (selected_inflation, 'bar', 'tab:red', {}),) for sr in selected_retirements]
+
+combined_data = ( (df, df_all, *[df_all]*len(retirement_draws)), (sp500_value_series, sp500_growth_vs_inflation_series, *sp500_retirements_vs_inflation_series) )
+combined_plot(*combined_data, title='40-year_DCA_investment_&_retirements_vs_inflation', path=results_strategy_validation_dir, figsize=(20,10+2.5*len(retirement_draws)))
 
 # overlap_plot(df, df_all, sp500_value_series, sp500_growth_vs_inflation_series, path=results_strategy_validation_dir, figsize=(20,10))
 

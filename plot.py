@@ -115,19 +115,21 @@ def get_outlier_extreme_values(data: np.array,
     return loval, hival, actual_loval, actual_hival
 
 
-def combined_plot(df1: pd.DataFrame, df2: pd.DataFrame, series_to_plot_1: List[Tuple[str, str, str, dict]], series_to_plot_2: List[Tuple[str, str, str, dict]], path: str = None, save: bool=True, title: str = None, **kwargs):
-    fig, (ax1, ax2) = plt.subplots(2, 1)
+def combined_plot(dfs: Iterable[pd.DataFrame], series_to_plot: Iterable[List[Tuple[str, str, str, dict]]], path: str = None, save: bool=True, title: str = None, **kwargs):
+    nplots = min(len(dfs), len(series_to_plot))
+    fig, axs = plt.subplots(nplots, 1, tight_layout=True)
+    if title is not None:
+        fig.suptitle(f'{title}\n')
 
-    multiplot(df1, series_to_plot_1, **kwargs, ax=ax1, save=False)
-    multiplot(df2, series_to_plot_2, **kwargs, ax=ax2, save=False)
+    columns = []
+    for df, splot, ax in zip(dfs, series_to_plot, axs):
+        multiplot(df, splot, **kwargs, ax=ax, save=False)
     
-    ax1.set_xticklabels(ax1.get_xticklabels(), rotation=90)
-    ax2.set_xticklabels(ax2.get_xticklabels(), rotation=90)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+
+        columns.append(list(zip(*splot))[0])
 
 
-    cols_1 = list(zip(*series_to_plot_1))[0]
-    cols_2 = list(zip(*series_to_plot_2))[0]
-    columns = [*cols_1,*cols_2]
     if save:
         save_plot(path=path, title=title, columns=columns, prefix='combined_plot')
 
