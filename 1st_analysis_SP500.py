@@ -117,11 +117,11 @@ df_new.describe().round(2)
 from plot import plot_histograms
 
 plot_histograms(df_all, path=results_all_dir)
-df_all.to_csv(f"{results_dir}/sp500_all.csv")
-df_all.describe().round(2).to_csv(f"{results_dir}/sp500_all_describe.csv")
+df_all.astype(float).round(2).to_csv(f"{results_dir}/sp500_all.csv")
+df_all.describe().astype(float).round(2).to_csv(f"{results_dir}/sp500_all_describe.csv")
 plot_histograms(df_new, path=results_new_dir)
-df_new.to_csv(f"{results_dir}/sp500_new.csv")
-df_new.describe().round(2).to_csv(f"{results_dir}/sp500_new_describe.csv")
+df_new.astype(float).round(2).to_csv(f"{results_dir}/sp500_new.csv")
+df_new.describe().astype(float).round(2).to_csv(f"{results_dir}/sp500_new_describe.csv")
 # %% [Markdown]
 # #  Validate strategies
 # %%
