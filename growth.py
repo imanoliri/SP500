@@ -2,6 +2,13 @@ import pandas as pd
 import numpy as np
 
 
+def values_from_growth(
+    growths: pd.Series, rolling_step: int = 2, starting_value: float = 100
+) -> pd.Series:
+    values = pd.Series([starting_value, *growths.values[:-1]], index=growths.index)
+    return values.rolling(rolling_step).apply(lambda x: x.iloc[-1] * x.iloc[0])
+
+
 def growth(values: pd.Series, rolling_step: int = 2) -> pd.Series:
     return values.rolling(rolling_step).apply(lambda x: x.iloc[-1] / x.iloc[0])
 
@@ -11,7 +18,7 @@ def compound_growth(growths: pd.Series, span: int = 5) -> pd.Series:
 
 
 # TODO: This should be a rolling-apply kind of thing!
-def dca_compount_growth(yearly_growth: pd.Series, span: int) -> pd.Series:
+def dca_compound_growth(yearly_growth: pd.Series, span: int) -> pd.Series:
     return pd.Series(
         (acc_growth_point(yearly_growth, span, p) for p in range(len(yearly_growth))),
         index=yearly_growth.index,
@@ -54,7 +61,7 @@ def generate_growth_infos(
     elif not value_column and growth_column:
         growths = df.loc[:, growth_column]
     else:
-        raise ValueError("One value column XOR growth column must be defined.")
+        raise ValueError("One value XOR growth column must be defined.")
 
     df_growth = pd.DataFrame(
         index=growths.index,
@@ -68,7 +75,7 @@ def generate_growth_infos(
 
     # Accumulated growths (as if you had invested 1 unit over the last years in the span and each year's had grown with it's own compounded interest) for the defined spans
     for span in growth_spans:
-        df_growth.loc[:, (acc_growth_column, span)] = dca_compount_growth(growths, span)
+        df_growth.loc[:, (acc_growth_column, span)] = dca_compound_growth(growths, span)
 
     return df_growth
 
@@ -93,5 +100,77 @@ def generate_value_growth_infos(
     # Get value growths for the defined spans
     for span in growth_spans:
         df_growth.loc[:, (growth_column, span)] = growth(values, span)
+
+    return df_growth
+
+
+def generate_growth(
+    df: pd.DataFrame,
+    *,
+    value_column: str,
+    range_start: int = 5,
+    range_end: int = 41,
+    range_step=5
+) -> pd.DataFrame:
+    growth_spans = list(range(range_start, range_end, range_step))
+    growth_column = "growth"
+
+    values = df.loc[:, value_column]
+    df_growth = pd.DataFrame(
+        index=values.index,
+        columns=pd.MultiIndex.from_product([[growth_column], growth_spans]),
+    )
+
+    # Get value growths for the defined spans
+    for span in growth_spans:
+        df_growth.loc[:, (growth_column, span)] = growth(values, span)
+
+    return df_growth
+
+
+def generate_growth_minus_percentage_infos(
+    df: pd.DataFrame,
+    *,
+    value_column: str = None,
+    growth_column: str = None,
+    percentage: float = 4,
+    range_start: int = 5,
+    range_end: int = 41,
+    range_step=5
+) -> pd.DataFrame:
+    growth_spans = list(range(range_start, range_end, range_step))
+    growth_column = "growth"
+    comp_growth_column = "compound_growth"
+    acc_growth_column = "dca_compound_growth"
+
+    # Get growths values_from_growth
+    if value_column and not growth_column:
+        values = df.loc[:, value_column]
+    elif not value_column and growth_column:
+        values = values_from_growth(df.loc[:, growth_column])
+    else:
+        raise ValueError("One value XOR growth column must be defined.")
+
+    values = values - values.iloc[0] * percentage / 100
+    growths = growth(values)
+
+    df_growth = pd.DataFrame(
+        index=growths.index,
+        columns=pd.MultiIndex.from_product(
+            [(comp_growth_column, acc_growth_column), growth_spans]
+        ),
+    )
+
+    # Growths minus percentage for the defined spans
+    for span in growth_spans:
+        df_growth.loc[:, (growth_column, span)] = compound_growth(growths, span)
+
+    # Compound growths for the defined spans
+    for span in growth_spans:
+        df_growth.loc[:, (comp_growth_column, span)] = compound_growth(growths, span)
+
+    # Accumulated growths (as if you had invested 1 unit over the last years in the span and each year's had grown with it's own compounded interest) for the defined spans
+    for span in growth_spans:
+        df_growth.loc[:, (acc_growth_column, span)] = dca_compound_growth(growths, span)
 
     return df_growth
