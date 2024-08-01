@@ -72,23 +72,35 @@ df_inflations.columns = pd.MultiIndex.from_tuples(
 # %%
 # Dynamic drawback
 from growth import generate_growth_infos
+from metrics import minimum_timespan_for_assured_growth_over_percent
 
+strategy_name = "sp500_minus_dynamic_drawback"
 retirement_draws = [4, 3, 2]
 df_dynamic_retirement_growths_variants = []
+
+df_dynamic_retirement_variants_KPIs = pd.DataFrame(
+    index=pd.MultiIndex.from_product([[strategy_name], retirement_draws])
+)
 for rdraw in retirement_draws:
     df.loc[:, f"growth_minus_dynamic_{rdraw}_percent"] = (
         df.loc[:, "growth"] - rdraw / 100
     )
+
     df_dynamic_retirement_growths = generate_growth_infos(
         df, growth_column=f"growth_minus_dynamic_{rdraw}_percent"
     )
-
     df_dynamic_retirement_growths.columns = pd.MultiIndex.from_tuples(
         [
             (f"sp500_minus_dynamic_{rdraw}_percent", *c)
             for c in df_dynamic_retirement_growths.columns
         ]
     )
+
+    growths = df.loc[:, f"growth_minus_dynamic_{rdraw}_percent"]
+    df_dynamic_retirement_variants_KPIs.loc[
+        (strategy_name, rdraw), "minimum_timespan_for_assured_growth"
+    ] = minimum_timespan_for_assured_growth_over_percent(growths, rdraw)
+
     df_dynamic_retirement_growths_variants.append(df_dynamic_retirement_growths)
 
 # %%
