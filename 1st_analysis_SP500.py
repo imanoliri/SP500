@@ -69,25 +69,39 @@ df_inflations.columns = pd.MultiIndex.from_tuples(
 )
 # %%
 # Create retirement (SP500 nominal - 4% rule retirement)
+# %%
+# Dynamic drawback
 from growth import generate_growth_infos
 
 retirement_draws = [4, 3, 2]
-df_retirement_growths_variants = []
+df_dynamic_retirement_growths_variants = []
 for rdraw in retirement_draws:
-    df.loc[:, f"growth_minus_{rdraw}_percent"] = df.loc[:, "growth"] - rdraw / 100
-    df_retirement_growths = generate_growth_infos(
-        df, growth_column=f"growth_minus_{rdraw}_percent"
+    df.loc[:, f"growth_minus_dynamic_{rdraw}_percent"] = (
+        df.loc[:, "growth"] - rdraw / 100
     )
-    df_retirement_growths.columns = pd.MultiIndex.from_tuples(
-        [(f"sp500_minus_{rdraw}_percent", *c) for c in df_retirement_growths.columns]
+    df_dynamic_retirement_growths = generate_growth_infos(
+        df, growth_column=f"growth_minus_dynamic_{rdraw}_percent"
     )
-    df_retirement_growths_variants.append(df_retirement_growths)
+
+    df_dynamic_retirement_growths.columns = pd.MultiIndex.from_tuples(
+        [
+            (f"sp500_minus_dynamic_{rdraw}_percent", *c)
+            for c in df_dynamic_retirement_growths.columns
+        ]
+    )
+    df_dynamic_retirement_growths_variants.append(df_dynamic_retirement_growths)
 
 # %%
 df_to_merge = df.iloc[:, :4]
 df_to_merge.columns = pd.MultiIndex.from_product([df_to_merge.columns, [""], [""]])
 df_all = pd.concat(
-    [df_to_merge, df_growths, *df_retirement_growths_variants, df_inflations], axis=1
+    [
+        df_to_merge,
+        df_growths,
+        *df_dynamic_retirement_growths_variants,
+        df_inflations,
+    ],
+    axis=1,
 )
 new_year = 1990
 df_new = df_all.loc[df_all.index > new_year]
@@ -120,7 +134,7 @@ from plot import combined_plot, multiplot, overlap_plot
 selected_index = "sp500"
 selected_strategy = ("sp500", "dca_compound_growth", 40)
 selected_retirements = [
-    (f"sp500_minus_{rdraw}_percent", "compound_growth", 40)
+    (f"sp500_minus_dynamic_{rdraw}_percent", "compound_growth", 40)
     for rdraw in retirement_draws
 ]
 selected_inflation = ("prices", "growth", 40)
