@@ -121,13 +121,16 @@ def get_outlier_extreme_values(data: np.array, erange: float = 1.5) -> Tuple[flo
 
 
 def combined_plot(
-    dfs: Iterable[pd.DataFrame],
+    dfs: Union[pd.DataFrame, Iterable[pd.DataFrame]],
     series_to_plot: Iterable[List[Tuple[str, str, str, dict]]],
     path: str = None,
     save: bool = True,
     title: str = None,
     **kwargs,
 ):
+
+    if isinstance(dfs, pd.DataFrame):
+        dfs = [dfs] * len(series_to_plot)
     nplots = min(len(dfs), len(series_to_plot))
     fig, axs = plt.subplots(nplots, 1, tight_layout=True)
     if title is not None:
@@ -190,9 +193,14 @@ def multiplot(
     if dropna:
         df_plot = df_plot.dropna()
     for plot_col, plot_kind, plot_color, plot_kwargs in series_to_plot:
-        df_plot.plot(
-            ax=ax, y=plot_col, kind=plot_kind, color=plot_color, **plot_kwargs, **kwargs
-        )
+        kwargs_to_plot = {}
+
+        if plot_kind is not None:
+            kwargs_to_plot["kind"] = plot_kind
+        if plot_color is not None:
+            kwargs_to_plot["color"] = plot_color
+
+        df_plot.plot(ax=ax, y=plot_col, **kwargs_to_plot, **plot_kwargs, **kwargs)
 
     ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
 
