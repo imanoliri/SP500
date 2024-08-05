@@ -349,3 +349,44 @@ class EarlyRetirementSimulation(BasicLifeSimulation):
         ]
 
 
+class FIRELifeSimulation(BasicLifeSimulation):
+
+    fire_percent: float = 3.0
+
+    def get_assets(self) -> list:
+        return [
+            (0, self.cash, True),
+            (0, self.investments, True),
+            (22, self.work_1, True),
+            (22, self.expenses_1, True),
+            (25, self.work_1, False),
+            (25, self.expenses_1, False),
+            (25, self.work_2, True),
+            (25, self.expenses_2, True),
+            (30, self.family, True),
+            (35, self.work_2, False),
+            (35, self.expenses_2, False),
+            (35, self.work_3, True),
+            (35, self.expenses_3, True),
+            (50, self.family, False),
+            (self.ready_for_fire, self.work_3, False),
+            (self.ready_for_fire, self.retirement, True),
+        ]
+
+    def ready_for_fire(self, r) -> bool:
+        if r == 0:
+            return False
+        if any(
+            pd.isnull(v)
+            for v in self.evolution.loc[r - 1, ["Outputs", "investments"]].values
+        ):
+            return False
+        if any(
+            pd.isnull(v)
+            for v in self.evolution.loc[r - 1, ["Outputs", "investments"]].values
+        ):
+            return False
+        safe_withdrawal = (
+            self.evolution.loc[r - 1, "investments"] * self.fire_percent / 100
+        )
+        return -self.evolution.loc[r - 1, "Outputs"] < safe_withdrawal
