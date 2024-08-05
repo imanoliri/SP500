@@ -127,24 +127,26 @@ class LifeSimulation(ABC):
         self, r
     ):  # TODO: differentiate between assets that directly add to cash vs are liquid (can be sold) vs not
 
-        self.evolution.loc[r, ["Balance", "Inputs", "Outputs"]] = 0
 
         asset_columns = self.yearly_balance_columns()
 
         pos_asset_mask = self.evolution.loc[r, asset_columns] > 0
+        inputs = 0
         if sum(pos_asset_mask) > 0:
-            self.evolution.loc[r, "Inputs"] = self.evolution.loc[
+            inputs = self.evolution.loc[
                 r, pos_asset_mask.loc[pos_asset_mask].index
             ].sum()
+            self.evolution.loc[r, "Inputs"] = inputs
         neg_asset_mask = self.evolution.loc[r, asset_columns] < 0
+        outputs = 0
         if sum(neg_asset_mask) > 0:
-            self.evolution.loc[r, "Outputs"] = self.evolution.loc[
+            outputs = self.evolution.loc[
                 r, neg_asset_mask.loc[neg_asset_mask].index
             ].sum()
+            self.evolution.loc[r, "Outputs"] = outputs
 
-        self.evolution.loc[r, "Balance"] = (
-            self.evolution.loc[r, "Inputs"] + self.evolution.loc[r, "Outputs"]
-        )
+        if self.evolution.loc[r, ["Inputs", "Outputs"]].isna().sum() < 2:
+            self.evolution.loc[r, "Balance"] = inputs + outputs
 
     def yearly_balance_assets(self) -> List[str]:
         return [a.name for _, a, _ in self.assets if a.yearly_balance]
@@ -173,9 +175,9 @@ class BasicLifeSimulation(LifeSimulation):
     yearly_salary_raise: Union[float, List[float], pd.Series] = 1 + 3.5 / 100
     yearly_investment_growth: Union[float, List[float], pd.Series] = 1.1
 
-    cash = Asset(name="cash", value=0)
+    cash = Asset(name="cash", value=np.NaN)
     investments = Asset(
-        name="investments", value=0, growth_relative=yearly_investment_growth
+        name="investments", value=np.NaN, growth_relative=yearly_investment_growth
     )
 
     work_1 = Asset(
