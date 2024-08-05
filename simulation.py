@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import List, Tuple, Callable, Union
 import pandas as pd
 import numpy as np
-from strategy import BasicInvestmentStrategy
+from strategy import InvestmentRetirementStrategy
 from plot import combined_plot, save_plot
 
 
@@ -16,6 +16,9 @@ class Asset:
     growth_fixed: float = 0
     leech_growth_relative: Tuple[str, float] = None
     leech_growth_fixed: Tuple[str, float] = None
+    leech_growth_tax: float = 0
+    leech_growth_fee: float = 0
+
     yearly_balance: bool = False
     active: bool = False
 
@@ -34,7 +37,7 @@ class LifeSimulation(ABC):
         self,
         assets: List[Tuple[Union[int, AssetCondition], Tuple[Asset, dict]]] = None,
         life_expectancy: int = 80,
-        investment_strategy: BasicInvestmentStrategy = None,
+        strategy: InvestmentRetirementStrategy = None,
     ) -> None:
 
         self.assets: List[Tuple[Union[int, AssetCondition], Tuple[Asset, dict]]] = (
@@ -42,11 +45,11 @@ class LifeSimulation(ABC):
         )
         self.evolution: pd.DataFrame = None
         self.life_expectancy: int = life_expectancy
-        self.investment_strategy = BasicInvestmentStrategy(
-            cash_target=30_000, before_investment_ratio=0.25
+        self.strategy = InvestmentRetirementStrategy(
+            cash_target=30_000, before_investment_ratio=0.25, investing_gains_tax=0.21
         )
-        if investment_strategy is not None:
-            self.investment_strategy = investment_strategy
+        if strategy is not None:
+            self.strategy = strategy
 
         super().__init__()
 
@@ -90,6 +93,7 @@ class LifeSimulation(ABC):
                     active = r >= a_year
             if active:
                 # Backward update
+                leech_relative_value = None
                 if r > 0:
                     if not pd.isnull(self.evolution.loc[r - 1, asset.name]):
                         self.evolution.loc[r, asset.name] = (
@@ -100,33 +104,49 @@ class LifeSimulation(ABC):
 
                     if asset.leech_growth_relative is not None:
                         leech_col, leech_rel = asset.leech_growth_relative
-                        leech_value = self.evolution.loc[r - 1, leech_col] * leech_rel
+                        leech_relative_value = (
+                            self.evolution.loc[r - 1, leech_col] * leech_rel
+                        )
+                        leech_relative_net_value = leech_relative_value * min(
+                            1, max(0, (1 - asset.leech_growth_tax))
+                        )
+                        leech_relative_net_value = min(
+                            leech_relative_net_value,
+                            max(0, leech_relative_net_value - asset.leech_growth_fee),
+                        )
                         self.evolution.loc[r, asset.name] = (
-                            self.evolution.loc[r, asset.name] + leech_value
+                            self.evolution.loc[r, asset.name] + leech_relative_net_value
                         )
                         self.evolution.loc[r, leech_col] = (
-                            self.evolution.loc[r, leech_col] - leech_value
+                            self.evolution.loc[r, leech_col] - leech_relative_value
                         )
 
+                leech_fixed_value = None
                 if asset.leech_growth_fixed is not None:
-                    leech_col, leech_value = asset.leech_growth_fixed
+                    leech_col, leech_fixed_value = asset.leech_growth_fixed
+                    leech_fixed_net_value = leech_fixed_value * min(
+                        1, max(0, (1 - asset.leech_growth_tax))
+                    )
+                    leech_fixed_net_value = min(
+                        leech_fixed_net_value,
+                        max(0, leech_fixed_net_value - asset.leech_growth_fee),
+                    )
                     self.evolution.loc[r, asset.name] = (
-                        self.evolution.loc[r, asset.name] + leech_value
+                        self.evolution.loc[r, asset.name] + leech_fixed_net_value
                     )
                     self.evolution.loc[r, leech_col] = (
-                        self.evolution.loc[r, leech_col] - leech_value
+                        self.evolution.loc[r, leech_col] - leech_fixed_value
                     )
 
         # Yearly Summary
         self.generate_yearly_summary(r)
 
         # Invest (into next year)
-        self.evolution = self.investment_strategy.invest(self.evolution, r)
+        self.evolution = self.strategy.apply(self.evolution, r)
 
     def generate_yearly_summary(
         self, r
     ):  # TODO: differentiate between assets that directly add to cash vs are liquid (can be sold) vs not
-
 
         asset_columns = self.yearly_balance_columns()
 
@@ -230,9 +250,8 @@ class BasicLifeSimulation(LifeSimulation):
     )
 
     retirement = Asset(
-        name="retirement",
-        value=0,
-        leech_growth_relative=("investments", 4 / 100),
+        name="investment_drawbacks",
+        value=np.NaN,
         yearly_balance=True,
     )
 
@@ -240,14 +259,14 @@ class BasicLifeSimulation(LifeSimulation):
         self,
         assets: List[Tuple[Union[int, AssetCondition], Tuple[Asset, dict]]] = None,
         life_expectancy: int = 80,
-        investment_strategy: BasicInvestmentStrategy = None,
+        strategy: InvestmentRetirementStrategy = None,
     ) -> None:
         if assets is None:
             assets = self.get_assets()
         super().__init__(
             assets=assets,
             life_expectancy=life_expectancy,
-            investment_strategy=investment_strategy,
+            strategy=strategy,
         )
 
     def get_assets(self) -> list:
@@ -306,11 +325,7 @@ class BasicLifeSimulation(LifeSimulation):
         yearly_balance_series = (
             # ("Inputs", "line", "tab:green", {}),
             # ("Outputs", "line", "tab:red", {}),
-            *[
-                (a.name, "line", None, {})
-                for a in self.yearly_assets()
-                if a.name != "retirement"
-            ],
+            *[(a.name, "line", None, {}) for a in self.yearly_assets()],
         )
 
         combined_data = (
