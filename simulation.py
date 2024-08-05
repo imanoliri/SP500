@@ -4,7 +4,7 @@ from typing import List, Tuple, Callable, Union
 import pandas as pd
 import numpy as np
 from strategy import BasicInvestmentStrategy
-from plot import combined_plot
+from plot import combined_plot, save_plot
 
 
 @dataclass
@@ -324,6 +324,30 @@ class BasicLifeSimulation(LifeSimulation):
             dropna=False,
             **kwargs,
         )
+
+    def plot_years(
+        self,
+        title: str = None,
+        kind: str = "bar",
+        plot_dir: str = "./",
+        **kwargs,
+    ):
+        for r in self.evolution.index:
+            self.plot_year(r, title, kind, plot_dir, **kwargs)
+
+    def plot_year(
+        self,
+        r: int,
+        title: str = None,
+        kind: str = "bar",
+        plot_dir: str = "./",
+        **kwargs,
+    ):
+        year_to_plot = self.evolution.loc[r].dropna()
+        if year_to_plot.empty:
+            return
+        year_to_plot.plot(kind=kind, **kwargs)
+        save_plot(path=plot_dir, title=title, prefix=f"year_{r}")
 
 
 class EarlyRetirementSimulation(BasicLifeSimulation):
