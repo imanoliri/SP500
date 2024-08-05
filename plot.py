@@ -126,6 +126,7 @@ def combined_plot(
     path: str = None,
     save: bool = True,
     title: str = None,
+    figsize: Tuple[float] = None,
     **kwargs,
 ):
 
@@ -136,9 +137,12 @@ def combined_plot(
     if title is not None:
         fig.suptitle(f"{title}\n")
 
+    if figsize is None:
+        figsize = (15, 5 + 2.5 * len(dfs))
+
     columns = []
     for df, splot, ax in zip(dfs, series_to_plot, axs):
-        multiplot(df, splot, **kwargs, ax=ax, save=False)
+        multiplot(df, splot, **kwargs, ax=ax, save=False, figsize=figsize)
 
         ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
 
