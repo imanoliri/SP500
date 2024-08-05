@@ -324,3 +324,28 @@ class BasicLifeSimulation(LifeSimulation):
         )
 
 
+class EarlyRetirementSimulation(BasicLifeSimulation):
+
+    retirement_age: int = 55
+
+    def get_assets(self) -> list:
+        return [
+            (0, self.cash, True),
+            (0, self.investments, True),
+            (22, self.work_1, True),
+            (22, self.expenses_1, True),
+            (26, self.work_1, False),
+            (26, self.expenses_1, False),
+            (25, self.work_2, True),
+            (25, self.expenses_2, True),
+            (30, self.family, True),
+            (36, self.work_2, False),
+            (36, self.expenses_2, False),
+            (35, self.work_3, True),
+            (35, self.expenses_3, True),
+            (50, self.family, False),
+            (self.retirement_age, self.work_3, False),
+            (self.retirement_age, self.retirement, True),
+        ]
+
+
