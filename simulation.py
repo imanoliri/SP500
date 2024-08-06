@@ -252,6 +252,7 @@ class BasicLifeSimulation(LifeSimulation):
     retirement = Asset(
         name="investment_drawbacks",
         value=np.NaN,
+        growth_relative=0,
         yearly_balance=True,
     )
 
