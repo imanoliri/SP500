@@ -25,6 +25,7 @@ df_growth = pd.read_csv(sp500_growth_data_filepath, index_col=0).sort_index()
 # %%
 # Merge data into single year market growth and inflation
 
+
 def from_time_column_to_single_year_value(
     df: pd.DataFrame, time_column: str = "Date"
 ) -> pd.DataFrame:

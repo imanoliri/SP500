@@ -61,6 +61,7 @@ class LifeSimulation(ABC):
                 *self.summary_columns,
                 *np.unique([a.name for y, a, b in self.assets]),
             ],
+            dtype=float,
         )
 
         for r in self.evolution.index:
@@ -313,6 +314,78 @@ class BasicLifeSimulation(LifeSimulation):
             a_names.append(a.name)
             assets.append(a)
         return assets
+
+    def asset_cols(self) -> List[str]:
+        return [a.name for _, a, _ in self.get_assets()]
+
+    def work_cols(self) -> List[str]:
+        return [a.name for a in self.yearly_assets() if a.name.startswith("work")]
+
+    def working_mask(self) -> pd.Series:
+        return ~self.evolution.loc[:, self.work_cols()].isna().all(axis=1)
+
+    def investment_drawing_mask(self) -> pd.Series:
+        return self.evolution.investment_drawbacks > 0
+
+    def kpis(self):
+        return {
+            "start_working_age": self.start_working_age(),
+            "end_working_age": self.end_working_age(),
+            "start_drawing_investments_age": self.start_drawing_investments_age(),
+            "life_expectancy": self.life_expectancy,
+            "education_years": self.education_years(),
+            "working_years": self.working_years(),
+            "retirement_years": self.retirement_years(),
+            "ending_net_worth": self.ending_net_worth(),
+            "min_cash_and_year": self.min_cash_and_year(),
+            "min_balance_and_year": self.min_balance_and_year(),
+            "max_balance_and_year": self.max_balance_and_year(),
+            "max_outputs_and_year": self.max_outputs_and_year(),
+        }
+
+    def start_working_age(self) -> int:
+        working_mask = self.working_mask()
+        return working_mask[working_mask].index[0]
+
+    def end_working_age(self) -> int:
+        working_mask = self.working_mask()
+        return working_mask[working_mask].index[-1]
+
+    def start_drawing_investments_age(self) -> int:
+        investment_drawing_mask = self.investment_drawing_mask()
+        if investment_drawing_mask.sum() == 0:
+            return np.NaN
+        return investment_drawing_mask[investment_drawing_mask].index[0]
+
+    def education_years(self) -> float:
+        return self.start_working_age() - 0
+
+    def working_years(self) -> float:
+        return self.end_working_age() - self.start_working_age()
+
+    def retirement_years(self) -> float:
+        return len(self.evolution) - self.end_working_age()
+
+    def ending_net_worth(self) -> float:
+        return self.evolution.iloc[-1].loc[self.asset_cols()].sum()
+
+    def min_cash_and_year(self) -> Tuple[int, float]:
+        evolution = self.evolution
+        return evolution.loc[:, "cash"].idxmin(), evolution.loc[:, "cash"].min()
+
+    def min_balance_and_year(
+        self,
+    ) -> Tuple[int, float]:
+        evolution = self.evolution
+        return evolution.loc[:, "Balance"].idxmin(), evolution.loc[:, "Balance"].min()
+
+    def max_balance_and_year(self) -> Tuple[int, float]:
+        evolution = self.evolution
+        return evolution.loc[:, "Balance"].idxmax(), evolution.loc[:, "Balance"].max()
+
+    def max_outputs_and_year(self) -> Tuple[int, float]:
+        evolution = self.evolution
+        return evolution.loc[:, "Outputs"].idxmin(), evolution.loc[:, "Outputs"].min()
 
     def plot(self, title: str = None, plot_dir: str = "./", **kwargs):
 
