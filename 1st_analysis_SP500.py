@@ -23,10 +23,12 @@ df_growth = pd.read_csv(sp500_growth_data_filepath, index_col=0).sort_index()
 
 
 # %%
-# Get only last value from each year
+# Merge data into single year market growth and inflation
+
 def from_time_column_to_single_year_value(
     df: pd.DataFrame, time_column: str = "Date"
 ) -> pd.DataFrame:
+    """Get only last value from each year."""
     year = df.loc[:, time_column].apply(lambda x: int(x[:4]))
     is_first_from_year = year.diff(1) != 0
     df = df.loc[is_first_from_year]
