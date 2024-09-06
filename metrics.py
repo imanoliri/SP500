@@ -8,7 +8,7 @@ def minimum_timespan_for_assured_growth_over_percent(
     ts = 2
     while True:
         if ts > len(growth):
-            return np.NaN
+            return np.nan
         assured_growth = smallest_average_growth_over_timespan(growth, ts)
         if (assured_growth - 1) * 100 >= percent:
             return ts

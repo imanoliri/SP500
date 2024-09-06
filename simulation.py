@@ -82,7 +82,7 @@ class LifeSimulation(ABC):
                 if add is True:
                     self.evolution.loc[r, asset.name] = asset.value
                 if add is False:
-                    self.evolution.loc[r, asset.name] = np.NaN
+                    self.evolution.loc[r, asset.name] = np.nan
 
             # update Asset (only if not removed in this same year)
             # (add and asset.name == "retirement") or not (activate and add is False):
@@ -196,9 +196,9 @@ class BasicLifeSimulation(LifeSimulation):
     yearly_salary_raise: Union[float, List[float], pd.Series] = 1 + 3.5 / 100
     yearly_investment_growth: Union[float, List[float], pd.Series] = 1.1
 
-    cash = Asset(name="cash", value=np.NaN)
+    cash = Asset(name="cash", value=np.nan)
     investments = Asset(
-        name="investments", value=np.NaN, growth_relative=yearly_investment_growth
+        name="investments", value=np.nan, growth_relative=yearly_investment_growth
     )
 
     work_1 = Asset(
@@ -252,7 +252,7 @@ class BasicLifeSimulation(LifeSimulation):
 
     retirement = Asset(
         name="investment_drawbacks",
-        value=np.NaN,
+        value=np.nan,
         growth_relative=0,
         yearly_balance=True,
     )
@@ -354,7 +354,7 @@ class BasicLifeSimulation(LifeSimulation):
     def start_drawing_investments_age(self) -> int:
         investment_drawing_mask = self.investment_drawing_mask()
         if investment_drawing_mask.sum() == 0:
-            return np.NaN
+            return np.nan
         return investment_drawing_mask[investment_drawing_mask].index[0]
 
     def education_years(self) -> float:
